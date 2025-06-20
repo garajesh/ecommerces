@@ -7,8 +7,10 @@ import Products from "./pages/ProductList/ProductList";
 import About from "./pages/About/About";
 import Contact from "./pages/Contact/Contact";
 import Login from "./pages/Auth/Login";
-import ProductDetail from './pages/ProductDetail/ProductDetail';
+//import ProductDetail from './pages/ProductDetails/ProductDetails';
 import Signup from "./pages/Auth/Signup";
+import ProductDetails from './pages/ProductDetails/ProductDetails';
+import Cart from './pages/Cart/Cart'; 
 
 
 // Layout Components
@@ -29,7 +31,9 @@ export default function App() {
             <Route path="/contact" element={<Contact />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
-            <Route path="/product/:id" element={<ProductDetail />} />
+            <Route path="/" element={<Home />} />
+            <Route path="/products/:id" element={<ProductDetails />} />
+            <Route path="/cart" element={<Cart />} />
            
           </Routes>
         </main>

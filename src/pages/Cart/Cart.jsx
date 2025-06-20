@@ -1,35 +1,35 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function Cart() {
   const navigate = useNavigate();
+  const [cartItems, setCartItems] = useState([]);
 
-  // ✅ Default cart items (sample)
-  const cartItems = [
-    {
-      id: 1,
-      name: "Smart Watch",
-      price: 129,
-      image: "/images/products/watch.jpg",
-    },
-    {
-      id: 2,
-      name: "Wireless Headphones",
-      price: 199,
-      image: "/images/products/headphones.jpg",
-    },
-    {
-      id: 3,
-      name: "Sneakers",
-      price: 89,
-      image: "/images/products/sneakers.jpg",
-    },
-  ];
+  // Load cart items from localStorage on component mount
+  useEffect(() => {
+    const savedCart = localStorage.getItem("cart");
+    if (savedCart) {
+      setCartItems(JSON.parse(savedCart));
+    }
+  }, []);
 
-  const subtotal = cartItems.reduce((sum, item) => sum + item.price, 0);
+  // Calculate subtotal
+  const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   const handleRemove = (id) => {
-    alert(`Product with ID ${id} removed (not actually implemented)`);
+    const updatedCart = cartItems.filter(item => item.id !== id);
+    setCartItems(updatedCart);
+    localStorage.setItem("cart", JSON.stringify(updatedCart));
+  };
+
+  const handleQuantityChange = (id, newQuantity) => {
+    if (newQuantity < 1) return;
+    
+    const updatedCart = cartItems.map(item => 
+      item.id === id ? { ...item, quantity: newQuantity } : item
+    );
+    setCartItems(updatedCart);
+    localStorage.setItem("cart", JSON.stringify(updatedCart));
   };
 
   const handleProceed = () => {
@@ -41,7 +41,15 @@ export default function Cart() {
       <h1 className="text-3xl font-bold mb-6">Your Cart</h1>
 
       {cartItems.length === 0 ? (
-        <p>Your cart is empty.</p>
+        <div className="text-center py-8">
+          <p className="text-lg mb-4">Your cart is empty.</p>
+          <button
+            onClick={() => navigate("/")}
+            className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-500 transition"
+          >
+            Continue Shopping
+          </button>
+        </div>
       ) : (
         <>
           <div className="grid gap-4 mb-8">
@@ -59,6 +67,21 @@ export default function Cart() {
                   <div>
                     <h2 className="text-lg font-semibold">{item.name}</h2>
                     <p className="text-indigo-600 font-bold">₹{item.price}</p>
+                    <div className="flex items-center mt-2">
+                      <button 
+                        onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
+                        className="px-2 border rounded-l"
+                      >
+                        -
+                      </button>
+                      <span className="px-4 border-t border-b">{item.quantity}</span>
+                      <button 
+                        onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
+                        className="px-2 border rounded-r"
+                      >
+                        +
+                      </button>
+                    </div>
                   </div>
                 </div>
                 <button
@@ -71,7 +94,6 @@ export default function Cart() {
             ))}
           </div>
 
-          {/* Subtotal and button */}
           <div className="bg-white p-6 rounded shadow text-center">
             <p className="text-xl font-semibold mb-4">Subtotal: ₹{subtotal}</p>
             <button

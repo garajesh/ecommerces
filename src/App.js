@@ -23,6 +23,7 @@ import OrderSuccess from "./pages/Delivery/OrderSuccess";
 // Admin Pages
 import AdminDashboard from "./pages/Admin/AdminDashboard/AdminDashboard";
 import AdminProfile from "./pages/Admin/AdminProfile/AdminProfile";
+import OrderDetails from "./pages/Admin/OrderDetails/OrderDetails";
 
 // Layout
 import Navbar from "./components/layout/Navbar";
@@ -63,10 +64,9 @@ function AppContent() {
               )
             }
           >
-            {/* 👇 Nested Admin Routes inside Dashboard layout */}
+            {/* Nested Admin Routes */}
             <Route path="profile" element={<AdminProfile />} />
-            {/* Add other admin routes like below */}
-            {/* <Route path="products" element={<AdminProducts />} /> */}
+            <Route path="orderdetails" element={<OrderDetails />} />
           </Route>
         </Routes>
       </main>

@@ -16,18 +16,17 @@ export default function Delivery() {
   };
 
   const handleContinue = () => {
-    console.log("Form Data:", formData);
-
     if (
       formData.name.trim() &&
       formData.phone.trim() &&
       formData.address.trim() &&
       formData.pincode.trim()
     ) {
-      console.log("✅ All fields filled. Navigating to /payment...");
+      // ✅ Save customer details to localStorage
+      localStorage.setItem("customerDetails", JSON.stringify(formData));
+
       navigate("/payment");
     } else {
-      console.warn("❌ Some fields are empty.");
       alert("Please fill all fields.");
     }
   };

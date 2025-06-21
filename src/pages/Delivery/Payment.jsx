@@ -14,7 +14,9 @@ export default function Payment() {
   });
   const [bank, setBank] = useState("");
 
-  const subtotal = 129 + 199 + 89; // Example total
+  // Get subtotal from cart stored in localStorage
+  const cartItems = JSON.parse(localStorage.getItem("cart")) || [];
+  const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   const handleCardChange = (e) => {
     setCard({ ...card, [e.target.name]: e.target.value });
@@ -37,6 +39,7 @@ export default function Payment() {
       } else {
         alert("Payment Successful!");
       }
+
       console.log("🟢 Navigating to /ordersuccess...");
       navigate("/ordersuccess");
     } else {
@@ -50,41 +53,26 @@ export default function Payment() {
 
       {/* Payment Method Buttons */}
       <div className="flex flex-wrap gap-4 mb-6">
-        <button
-          onClick={() => setMethod("upi")}
-          className={`px-4 py-2 rounded border ${
-            method === "upi" ? "bg-indigo-600 text-white" : ""
-          }`}
-        >
-          UPI
-        </button>
-        <button
-          onClick={() => setMethod("card")}
-          className={`px-4 py-2 rounded border ${
-            method === "card" ? "bg-indigo-600 text-white" : ""
-          }`}
-        >
-          Card
-        </button>
-        <button
-          onClick={() => setMethod("netbanking")}
-          className={`px-4 py-2 rounded border ${
-            method === "netbanking" ? "bg-indigo-600 text-white" : ""
-          }`}
-        >
-          Net Banking
-        </button>
-        <button
-          onClick={() => setMethod("cod")}
-          className={`px-4 py-2 rounded border ${
-            method === "cod" ? "bg-indigo-600 text-white" : ""
-          }`}
-        >
-          Cash on Delivery
-        </button>
+        {["upi", "card", "netbanking", "cod"].map((option) => (
+          <button
+            key={option}
+            onClick={() => setMethod(option)}
+            className={`px-4 py-2 rounded border ${
+              method === option ? "bg-indigo-600 text-white" : ""
+            }`}
+          >
+            {option === "upi"
+              ? "UPI"
+              : option === "card"
+              ? "Card"
+              : option === "netbanking"
+              ? "Net Banking"
+              : "Cash on Delivery"}
+          </button>
+        ))}
       </div>
 
-      {/* Payment Form Inputs */}
+      {/* Payment Inputs */}
       {method === "upi" && (
         <div className="mb-4">
           <input
@@ -158,7 +146,7 @@ export default function Payment() {
         </div>
       )}
 
-      {/* Total and Action Button */}
+      {/* Total and Button */}
       <div className="text-xl font-semibold mb-4">Total: ₹{subtotal}</div>
 
       <button

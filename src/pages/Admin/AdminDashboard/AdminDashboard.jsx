@@ -5,7 +5,6 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // ✅ Define isDashboardHome correctly
   const isDashboardHome = location.pathname === "/admin-dashboard";
 
   const handleLogout = () => {
@@ -24,7 +23,10 @@ export default function AdminDashboard() {
           <Link to="/admin-dashboard/profile" className="block hover:text-indigo-600">👤 Profile</Link>
           <Link to="/admin-dashboard/products" className="block hover:text-indigo-600">🛍️ Product Manage</Link>
           <Link to="/admin-dashboard/product-details" className="block hover:text-indigo-600">📦 Product Details</Link>
-          <Link to="/admin-dashboard/orders" className="block hover:text-indigo-600">📑 Order Details</Link>
+          
+          {/* ✅ Updated path to match your App.js route */}
+          <Link to="/admin-dashboard/orderdetails" className="block hover:text-indigo-600">📑 Order Details</Link>
+
           <Link to="/admin-dashboard/feedback" className="block hover:text-indigo-600">💬 Feedback</Link>
           <Link to="/admin-dashboard/report" className="block hover:text-indigo-600">📊 Report</Link>
         </nav>

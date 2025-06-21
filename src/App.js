@@ -11,6 +11,9 @@ import Login from "./pages/Auth/Login";
 import Signup from "./pages/Auth/Signup";
 import ProductDetails from './pages/ProductDetails/ProductDetails';
 import Cart from './pages/Cart/Cart'; 
+import Delivery from "./pages/Delivery/Delivery";
+import Payment from "./pages/Delivery/Payment";
+import OrderSuccess from "./pages/Delivery/OrderSuccess";
 
 
 // Layout Components
@@ -34,7 +37,9 @@ export default function App() {
             <Route path="/" element={<Home />} />
             <Route path="/products/:id" element={<ProductDetails />} />
             <Route path="/cart" element={<Cart />} />
-           
+            <Route path="/delivery" element={<Delivery />} />
+            <Route path="/payment" element={<Payment />} />
+            <Route path="/ordersuccess" element={<OrderSuccess />} />
           </Routes>
         </main>
 

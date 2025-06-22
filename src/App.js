@@ -24,6 +24,8 @@ import OrderSuccess from "./pages/Delivery/OrderSuccess";
 import AdminDashboard from "./pages/Admin/AdminDashboard/AdminDashboard";
 import AdminProfile from "./pages/Admin/AdminProfile/AdminProfile";
 import OrderDetails from "./pages/Admin/OrderDetails/OrderDetails";
+// Add the new ProductManage import
+import ProductManage from "./pages/Admin/ProductManage/ProductManage";
 
 // Layout
 import Navbar from "./components/layout/Navbar";
@@ -66,7 +68,9 @@ function AppContent() {
           >
             {/* Nested Admin Routes */}
             <Route path="profile" element={<AdminProfile />} />
+            <Route path="products" element={<ProductManage />} />
             <Route path="orderdetails" element={<OrderDetails />} />
+            
           </Route>
         </Routes>
       </main>

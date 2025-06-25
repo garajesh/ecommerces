@@ -24,6 +24,7 @@ import OrderSuccess from "./pages/Delivery/OrderSuccess";
 import AdminDashboard from "./pages/Admin/AdminDashboard/AdminDashboard";
 import AdminProfile from "./pages/Admin/AdminProfile/AdminProfile";
 import OrderDetails from "./pages/Admin/OrderDetails/OrderDetails";
+import Feedback from "./pages/Admin/Feedback/Feedback";
 // Add the new ProductManage import
 import ProductManage from "./pages/Admin/ProductManage/ProductManage";
 
@@ -70,7 +71,7 @@ function AppContent() {
             <Route path="profile" element={<AdminProfile />} />
             <Route path="products" element={<ProductManage />} />
             <Route path="orderdetails" element={<OrderDetails />} />
-            
+            <Route path="feedback" element={<Feedback />} />
           </Route>
         </Routes>
       </main>

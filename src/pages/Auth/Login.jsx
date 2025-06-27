@@ -1,25 +1,56 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function Login() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleSubmit = (e) => {
-  e.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  if (email === "admin" && password === "admin@123") {
-    localStorage.setItem("user", "admin");
-    navigate("/admin-dashboard");  // ✅ Correct path to AdminDashboard
-  } else {
-    localStorage.setItem("user", "customer");
-    navigate("/"); // or "/" or any user homepage route you prefer
-  }
-};
+    try {
+      const response = await fetch("http://localhost:8080/api/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+
+        // Assume backend returns something like:
+        // { role: 'admin' } or { role: 'customer' }
+
+        if (result.role === "admin") {
+  localStorage.setItem("user", "admin");
+  toast.success("Admin login successful");
+  navigate("/admin-dashboard");
+} else if (result.role === "customer") {
+  localStorage.setItem("user", "customer");
+  toast.success("Login successful");
+  navigate("/");
+}
+ else {
+          toast.error("Unknown user role.");
+        }
+      } else {
+        const errorText = await response.text();
+        toast.error("Login failed: " + errorText);
+      }
+    } catch (err) {
+      console.error("Login error:", err);
+      toast.error("Server error. Please try again.");
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+      <ToastContainer position="top-center" />
       <div className="w-full max-w-md bg-white shadow-md rounded-lg p-8">
         <h2 className="text-2xl font-bold text-center mb-6">Login to Your Account</h2>
 
@@ -27,10 +58,10 @@ export default function Login() {
           <div className="mb-4">
             <label className="block text-gray-700 mb-1">Email</label>
             <input
-              type="text"
+              type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin or user email"
+              placeholder="Enter your email"
               className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
               required
             />

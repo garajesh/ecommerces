@@ -1,7 +1,6 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-
-const sampleProducts = JSON.parse(localStorage.getItem('products')) || [];
+import axios from "axios";
 
 export default function ProductList() {
   const navigate = useNavigate();
@@ -9,6 +8,7 @@ export default function ProductList() {
   const queryParams = new URLSearchParams(location.search);
   const urlCategory = queryParams.get("category");
 
+  const [products, setProducts] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState(urlCategory || "All");
   const [priceRange, setPriceRange] = useState("All");
@@ -16,7 +16,10 @@ export default function ProductList() {
   const [ratingFilter, setRatingFilter] = useState("All");
   const [sortBy, setSortBy] = useState("name");
   const [inStockOnly, setInStockOnly] = useState(false);
-  const [selectedColors, setSelectedColors] = useState([]);
+
+  useEffect(() => {
+    fetchProducts();
+  }, [searchQuery, filterCategory, priceRange, brandFilter, ratingFilter, sortBy, inStockOnly]);
 
   useEffect(() => {
     if (urlCategory) {
@@ -25,66 +28,22 @@ export default function ProductList() {
     }
   }, [urlCategory]);
 
-  const uniqueBrands = useMemo(() => {
-    const brands = [...new Set(sampleProducts.map(product => product.brand))];
-    return brands.sort();
-  }, []);
-
-  const uniqueColors = useMemo(() => {
-    const colors = [...new Set(sampleProducts.flatMap(product => product.colors || []))];
-    return colors.sort();
-  }, []);
-
-  const filterByPrice = (product) => {
-    if (priceRange === "All") return true;
-    if (priceRange === "under1000") return product.price < 1000;
-    if (priceRange === "1000to2500") return product.price >= 1000 && product.price <= 2500;
-    if (priceRange === "above2500") return product.price > 2500;
-    return true;
+  const fetchProducts = async () => {
+    try {
+      const response = await axios.post("http://localhost:8080/api/user-products/filter", {
+        searchQuery,
+        filterCategory,
+        priceRange,
+        brandFilter,
+        ratingFilter,
+        sortBy,
+        inStockOnly
+      });
+      setProducts(response.data);
+    } catch (error) {
+      console.error("Failed to fetch products", error);
+    }
   };
-
-  const filterByRating = (product) => {
-    if (ratingFilter === "All") return true;
-    const minRating = parseFloat(ratingFilter);
-    return product.rating >= minRating;
-  };
-
-  const filterByColors = (product) => {
-    if (selectedColors.length === 0) return true;
-    return selectedColors.some(color => product.colors?.includes(color));
-  };
-
-  const filteredProducts = useMemo(() => {
-    let filtered = sampleProducts.filter((product) => {
-      const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            product.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            product.brand.toLowerCase().includes(searchQuery.toLowerCase());
-
-      const normalize = str => str?.toLowerCase().replace(/\s+/g, '-');
-      const matchesCategory = filterCategory === "All" || normalize(product.category) === normalize(filterCategory);
-
-      const matchesPrice = filterByPrice(product);
-      const matchesBrand = brandFilter === "All" || product.brand === brandFilter;
-      const matchesRating = filterByRating(product);
-      const matchesStock = !inStockOnly || (product.stock > 0 || product.inStock);
-      const matchesColors = filterByColors(product);
-
-      return matchesSearch && matchesCategory && matchesPrice && matchesBrand && matchesRating && matchesStock && matchesColors;
-    });
-
-    filtered.sort((a, b) => {
-      switch (sortBy) {
-        case "price-low": return a.price - b.price;
-        case "price-high": return b.price - a.price;
-        case "rating": return b.rating - a.rating;
-        case "reviews": return b.reviews - a.reviews;
-        case "discount": return (b.discount || 0) - (a.discount || 0);
-        default: return a.name.localeCompare(b.name);
-      }
-    });
-
-    return filtered;
-  }, [searchQuery, filterCategory, priceRange, brandFilter, ratingFilter, sortBy, inStockOnly, selectedColors]);
 
   const handleProductClick = (product) => {
     navigate(`/products/${product.id}`, { state: { product } });
@@ -101,12 +60,6 @@ export default function ProductList() {
     navigate("/cart");
   };
 
-  const handleColorToggle = (color) => {
-    setSelectedColors(prev =>
-      prev.includes(color) ? prev.filter(c => c !== color) : [...prev, color]
-    );
-  };
-
   const clearAllFilters = () => {
     setSearchQuery("");
     setFilterCategory("All");
@@ -115,18 +68,7 @@ export default function ProductList() {
     setRatingFilter("All");
     setSortBy("name");
     setInStockOnly(false);
-    setSelectedColors([]);
   };
-
-  const activeFiltersCount = [
-    searchQuery,
-    filterCategory !== "All" ? filterCategory : null,
-    priceRange !== "All" ? priceRange : null,
-    brandFilter !== "All" ? brandFilter : null,
-    ratingFilter !== "All" ? ratingFilter : null,
-    inStockOnly ? "inStock" : null,
-    selectedColors.length > 0 ? "colors" : null
-  ].filter(Boolean).length;
 
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-12">
@@ -135,10 +77,9 @@ export default function ProductList() {
           Explore Our <span className="text-indigo-600">Products</span>
         </h1>
 
-        {/* Product Grid */}
         <div id="product-grid" className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-          {filteredProducts.length > 0 ? (
-            filteredProducts.map((product) => (
+          {products.length > 0 ? (
+            products.map((product) => (
               <div
                 key={product.id}
                 onClick={() => handleProductClick(product)}
@@ -150,11 +91,6 @@ export default function ProductList() {
                     alt={product.name}
                     className="w-full h-48 object-cover"
                   />
-                  {product.discount && (
-                    <span className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 text-xs rounded-full">
-                      -{product.discount}%
-                    </span>
-                  )}
                   {(product.stock === 0 || product.inStock === false) && (
                     <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
                       <span className="text-white font-bold">Out of Stock</span>

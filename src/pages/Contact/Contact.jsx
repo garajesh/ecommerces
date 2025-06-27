@@ -1,19 +1,30 @@
 import React, { useState } from "react";
+import axios from "axios";
 
 export default function Contact() {
-  const [formData, setFormData] = useState({ name: "", email: "", message: "" });
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    message: "",
+  });
 
   const handleChange = (e) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    setFormData((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const feedbacks = JSON.parse(localStorage.getItem("feedbacks")) || [];
-    feedbacks.push({ ...formData, id: Date.now() });
-    localStorage.setItem("feedbacks", JSON.stringify(feedbacks));
-    alert("Feedback submitted!");
-    setFormData({ name: "", email: "", message: "" });
+    try {
+      await axios.post("http://localhost:8080/api/contact", formData);
+      alert("Feedback submitted successfully!");
+      setFormData({ name: "", email: "", message: "" });
+    } catch (error) {
+      alert("Failed to submit feedback.");
+      console.error("Error:", error);
+    }
   };
 
   return (
@@ -45,9 +56,14 @@ export default function Contact() {
             </div>
           </div>
 
-          <form className="space-y-6 bg-gray-50 p-6 rounded-lg shadow-md" onSubmit={handleSubmit}>
+          <form
+            className="space-y-6 bg-gray-50 p-6 rounded-lg shadow-md"
+            onSubmit={handleSubmit}
+          >
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Name
+              </label>
               <input
                 type="text"
                 name="name"
@@ -58,7 +74,9 @@ export default function Contact() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Email
+              </label>
               <input
                 type="email"
                 name="email"
@@ -69,7 +87,9 @@ export default function Contact() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Message</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Message
+              </label>
               <textarea
                 name="message"
                 rows="4"

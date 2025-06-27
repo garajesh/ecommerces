@@ -22,7 +22,7 @@ export default function AdminDashboard() {
         <nav className="space-y-2">
           <Link to="/admin-dashboard/profile" className="block hover:text-indigo-600">👤 Profile</Link>
           <Link to="/admin-dashboard/products" className="block hover:text-indigo-600">🛍️ Product Manage</Link>
-          <Link to="/admin-dashboard/product-details" className="block hover:text-indigo-600">📦 Product Details</Link>
+          <Link to="/admin-dashboard/productdetails" className="block hover:text-indigo-600">📦 Product Details</Link>
           
           {/* ✅ Updated path to match your App.js route */}
           <Link to="/admin-dashboard/orderdetails" className="block hover:text-indigo-600">📑 Order Details</Link>

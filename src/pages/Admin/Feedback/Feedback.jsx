@@ -1,17 +1,29 @@
 import React, { useEffect, useState } from "react";
+import axios from "axios";
 
 function Feedback() {
   const [feedbacks, setFeedbacks] = useState([]);
 
   useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem("feedbacks")) || [];
-    setFeedbacks(stored);
+    fetchFeedbacks();
   }, []);
 
-  const deleteFeedback = (id) => {
-    const updated = feedbacks.filter((fb) => fb.id !== id);
-    localStorage.setItem("feedbacks", JSON.stringify(updated));
-    setFeedbacks(updated);
+  const fetchFeedbacks = async () => {
+    try {
+      const response = await axios.get("http://localhost:8080/api/feedback");
+      setFeedbacks(response.data);
+    } catch (error) {
+      console.error("Error fetching feedbacks:", error);
+    }
+  };
+
+  const deleteFeedback = async (id) => {
+    try {
+      await axios.delete(`http://localhost:8080/api/feedback/${id}`);
+      setFeedbacks((prev) => prev.filter((fb) => fb.id !== id));
+    } catch (error) {
+      console.error("Failed to delete feedback:", error);
+    }
   };
 
   return (

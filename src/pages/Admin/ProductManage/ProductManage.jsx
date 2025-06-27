@@ -6,17 +6,19 @@ const ProductManage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
-  const [activeTab, setActiveTab] = useState('manage');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('name');
   const [filterBy, setFilterBy] = useState('all');
+
+  // Define some example categories
+  const categories = ['Electronics', 'Books', 'Clothing', 'Home & Kitchen', 'Sports', 'Toys'];
 
   const [formData, setFormData] = useState({
     id: '',
     name: '',
     description: '',
     price: '',
-    category: '',
+    category: '', // Default to empty string for initial state
     stock: '',
     image: '',
     brand: '',
@@ -28,22 +30,25 @@ const ProductManage = () => {
     updatedAt: new Date().toISOString()
   });
 
-  useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem('products'));
-    if (stored) {
-      setProducts(stored);
-    } else {
-      const sampleProducts = []; // Optional: load default
-      setProducts(sampleProducts);
-      localStorage.setItem('products', JSON.stringify(sampleProducts));
+  const fetchProducts = async () => {
+    try {
+      const res = await fetch("http://localhost:8080/api/products");
+      if (!res.ok) throw new Error("Fetch failed");
+      const data = await res.json();
+      setProducts(data);
+    } catch (err) {
+      console.error("Failed to fetch products:", err);
     }
+  };
+
+  useEffect(() => {
+    fetchProducts();
   }, []);
 
   const calculateProductAge = (createdAt) => {
     const created = new Date(createdAt);
     const now = new Date();
-    const diffTime = Math.abs(now - created);
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return Math.ceil((now - created) / (1000 * 60 * 60 * 24));
   };
 
   const getStockStatus = (stock) => {
@@ -55,24 +60,12 @@ const ProductManage = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value,
-      updatedAt: new Date().toISOString()
-    }));
+    setFormData(prev => ({ ...prev, [name]: value, updatedAt: new Date().toISOString() }));
   };
 
   const handleTagsChange = (e) => {
     const tags = e.target.value.split(',').map(tag => tag.trim()).filter(Boolean);
     setFormData(prev => ({ ...prev, tags, updatedAt: new Date().toISOString() }));
-  };
-
-  const handleSpecChange = (key, value) => {
-    setFormData(prev => ({
-      ...prev,
-      specifications: { ...prev.specifications, [key]: value },
-      updatedAt: new Date().toISOString()
-    }));
   };
 
   const openAddModal = () => {
@@ -85,7 +78,14 @@ const ProductManage = () => {
   };
 
   const openEditModal = (product) => {
-    setFormData({ ...product, tags: product.tags || [], specifications: product.specifications || {}, updatedAt: new Date().toISOString() });
+    // Ensure category is set correctly for select dropdown
+    setFormData({
+      ...product,
+      tags: product.tags || [],
+      specifications: product.specifications || {},
+      category: product.category || '', // Default to empty string if category is null/undefined
+      updatedAt: new Date().toISOString()
+    });
     setSelectedProduct(product);
     setIsEditMode(true);
     setIsModalOpen(true);
@@ -97,43 +97,53 @@ const ProductManage = () => {
     setIsEditMode(false);
   };
 
-  const saveProduct = (e) => {
+  const saveProduct = async (e) => {
     e.preventDefault();
     if (!formData.name || !formData.price || !formData.category || !formData.stock) {
       alert('Please fill in all required fields');
       return;
     }
-
     const productData = {
       ...formData,
-      id: isEditMode ? formData.id : Date.now().toString(),
       price: parseFloat(formData.price),
       stock: parseInt(formData.stock),
       rating: parseFloat(formData.rating) || 0,
       reviews: parseInt(formData.reviews) || 0
     };
 
-    const updatedProducts = isEditMode
-      ? products.map(p => p.id === productData.id ? productData : p)
-      : [...products, productData];
+    try {
+      const url = isEditMode ? `http://localhost:8080/api/products/${formData.id}` : "http://localhost:8080/api/products";
+      const method = isEditMode ? 'PUT' : 'POST';
 
-    setProducts(updatedProducts);
-    localStorage.setItem('products', JSON.stringify(updatedProducts));
-    closeModal();
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(productData)
+      });
+
+      if (!response.ok) throw new Error("Failed to save product");
+      await fetchProducts();
+      closeModal();
+    } catch (error) {
+      console.error("Save failed:", error);
+    }
   };
 
-  const deleteProduct = (id) => {
-    if (window.confirm('Are you sure you want to delete this product?')) {
-      const updated = products.filter(p => p.id !== id);
-      setProducts(updated);
-      localStorage.setItem('products', JSON.stringify(updated));
+  const deleteProduct = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this product?')) return;
+    try {
+      const res = await fetch(`http://localhost:8080/api/products/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error("Delete failed");
+      await fetchProducts();
+    } catch (error) {
+      console.error(error);
     }
   };
 
   const filteredProducts = products.filter(product => {
     const match = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                  product.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                  product.brand.toLowerCase().includes(searchTerm.toLowerCase());
+      product.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.brand.toLowerCase().includes(searchTerm.toLowerCase());
     if (filterBy === 'low-stock') return match && product.stock <= 5;
     if (filterBy === 'out-of-stock') return match && product.stock === 0;
     if (filterBy === 'old-products') return match && calculateProductAge(product.createdAt) > 90;
@@ -144,6 +154,7 @@ const ProductManage = () => {
       case 'price': return a.price - b.price;
       case 'stock': return a.stock - b.stock;
       case 'age': return new Date(b.createdAt) - new Date(a.createdAt);
+      case 'category': return a.category.localeCompare(b.category);
       default: return 0;
     }
   });
@@ -152,18 +163,13 @@ const ProductManage = () => {
     <div className="product-manage">
       <h1>Product Management</h1>
       <div className="controls">
-        <input
-          type="text"
-          placeholder="Search products..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="search-input"
-        />
+        <input type="text" placeholder="Search products..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="search-input" />
         <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
           <option value="name">Sort by Name</option>
           <option value="price">Sort by Price</option>
           <option value="stock">Sort by Stock</option>
           <option value="age">Sort by Age</option>
+          <option value="category">Sort by Category</option>
         </select>
         <select value={filterBy} onChange={(e) => setFilterBy(e.target.value)}>
           <option value="all">All Products</option>
@@ -210,67 +216,143 @@ const ProductManage = () => {
               <button className="close-btn" onClick={closeModal}>×</button>
             </div>
             <form className="modal-form" onSubmit={saveProduct}>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Product Name *</label>
-                  <input type="text" name="name" value={formData.name} onChange={handleInputChange} required />
-                </div>
-                <div className="form-group">
-                  <label>Brand</label>
-                  <input type="text" name="brand" value={formData.brand} onChange={handleInputChange} />
-                </div>
-              </div>
               <div className="form-group">
-                <label>Description</label>
-                <textarea name="description" value={formData.description} onChange={handleInputChange} rows="3" />
+                <label htmlFor="name">Product Name *</label>
+                <input
+                  id="name"
+                  name="name"
+                  type="text"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  className={formData.name ? 'input-valid' : 'input-invalid'} // Dynamic class for validation styling
+                  required
+                />
               </div>
+
+              <div className="form-group">
+                <label htmlFor="brand">Brand</label>
+                <input
+                  id="brand"
+                  name="brand"
+                  type="text"
+                  value={formData.brand}
+                  onChange={handleInputChange}
+                  className={'input-valid'} // Always green unless specific validation needed
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="description">Description</label>
+                <textarea
+                  id="description"
+                  name="description"
+                  value={formData.description}
+                  onChange={handleInputChange}
+                  rows="3" // Adjust rows as needed
+                  className={'input-valid'}
+                ></textarea>
+              </div>
+
               <div className="form-row">
-                <div className="form-group">
-                  <label>Price *</label>
-                  <input type="number" name="price" value={formData.price} onChange={handleInputChange} step="0.01" required />
+                <div className="form-group half-width">
+                  <label htmlFor="price">Price *</label>
+                  <input
+                    id="price"
+                    name="price"
+                    type="number"
+                    value={formData.price}
+                    onChange={handleInputChange}
+                    className={formData.price ? 'input-valid' : 'input-invalid'}
+                    required
+                  />
                 </div>
-                <div className="form-group">
-                  <label>Stock Quantity *</label>
-                  <input type="number" name="stock" value={formData.stock} onChange={handleInputChange} required />
+                <div className="form-group half-width">
+                  <label htmlFor="stock">Stock Quantity *</label>
+                  <input
+                    id="stock"
+                    name="stock"
+                    type="number"
+                    value={formData.stock}
+                    onChange={handleInputChange}
+                    className={formData.stock ? 'input-valid' : 'input-invalid'}
+                    required
+                  />
                 </div>
               </div>
+
               <div className="form-row">
-                <div className="form-group">
-                  <label>Category *</label>
-                  <select name="category" value={formData.category} onChange={handleInputChange} required>
+                <div className="form-group half-width">
+                  <label htmlFor="category">Category *</label>
+                  <select
+                    id="category"
+                    name="category"
+                    value={formData.category}
+                    onChange={handleInputChange}
+                    className={formData.category ? 'input-valid' : 'input-invalid'}
+                    required
+                  >
                     <option value="">Select Category</option>
-                    <option value="Electronics">Electronics</option>
-                    <option value="Fashion">Fashion</option>
-                    <option value="Clothing">Clothing</option>
-                    <option value="Footwear">Footwear</option>
-                    <option value="Home">Home</option>
-                    <option value="Sports">Sports</option>
-                    <option value="Books">Books</option>
-                    <option value="Beauty">Beauty</option>
+                    {categories.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
                   </select>
                 </div>
-                <div className="form-group">
-                  <label>Image URL</label>
-                  <input type="url" name="image" value={formData.image} onChange={handleInputChange} />
+                <div className="form-group half-width">
+                  <label htmlFor="image">Image URL</label>
+                  <input
+                    id="image"
+                    name="image"
+                    type="text"
+                    value={formData.image}
+                    onChange={handleInputChange}
+                    className={'input-valid'}
+                  />
                 </div>
               </div>
+
               <div className="form-row">
-                <div className="form-group">
-                  <label>Rating</label>
-                  <input type="number" name="rating" value={formData.rating} onChange={handleInputChange} min="0" max="5" step="0.1" />
+                <div className="form-group half-width">
+                  <label htmlFor="rating">Rating</label>
+                  <input
+                    id="rating"
+                    name="rating"
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="5"
+                    value={formData.rating}
+                    onChange={handleInputChange}
+                    className={'input-valid'}
+                  />
                 </div>
-                <div className="form-group">
-                  <label>Reviews</label>
-                  <input type="number" name="reviews" value={formData.reviews} onChange={handleInputChange} min="0" />
+                <div className="form-group half-width">
+                  <label htmlFor="reviews">Reviews</label>
+                  <input
+                    id="reviews"
+                    name="reviews"
+                    type="number"
+                    value={formData.reviews}
+                    onChange={handleInputChange}
+                    className={'input-valid'}
+                  />
                 </div>
               </div>
+
               <div className="form-group">
-                <label>Tags (comma-separated)</label>
-                <input type="text" value={formData.tags.join(', ')} onChange={handleTagsChange} />
+                <label htmlFor="tags">Tags (comma-separated)</label>
+                <input
+                  id="tags"
+                  name="tags"
+                  type="text"
+                  value={formData.tags.join(', ')}
+                  onChange={handleTagsChange}
+                  className={'input-valid'}
+                />
               </div>
+
               <div className="modal-actions">
                 <button type="button" className="cancel-btn" onClick={closeModal}>Cancel</button>
-                <button type="submit" className="save-btn">{isEditMode ? 'Update Product' : 'Add Product'}</button>
+                <button type="submit" className="add-product-btn">{isEditMode ? 'Update Product' : 'Add Product'}</button>
               </div>
             </form>
           </div>

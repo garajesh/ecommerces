@@ -47,9 +47,11 @@ export default function ProductDetails() {
         >
           <option value="">All Categories</option>
           <option value="Electronics">Electronics</option>
-          <option value="Fashion">Fashion</option>
+          <option value="Clothing">Clothing</option>
           <option value="Books">Books</option>
-          <option value="Home">Home</option>
+          <option value="Home & kitchen">Home & kitchen</option>
+          <option value="Sports">Sports</option>
+          <option value="Toys">Toys</option>
         </select>
 
         <select

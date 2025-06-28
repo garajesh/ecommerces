@@ -12,18 +12,16 @@ export default function Home() {
   const navigate = useNavigate();
   const [featuredProducts, setFeaturedProducts] = useState([]);
 
- useEffect(() => {
-  axios.post("http://localhost:8080/api/home/featured-products", {
-    featured: true,
-    category: "Electronics"
-  })
-  .then((res) => {
-    setFeaturedProducts(res.data);
-  })
-  .catch((err) => {
-    console.error("Error fetching featured products:", err);
-  });
+useEffect(() => {
+  axios.get("http://localhost:8080/api/home/featured-products")
+    .then((res) => {
+      setFeaturedProducts(res.data);
+    })
+    .catch((err) => {
+      console.error("Error fetching featured products:", err);
+    });
 }, []);
+
 
 
 

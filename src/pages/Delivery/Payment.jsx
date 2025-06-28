@@ -4,69 +4,95 @@ import axios from "axios";
 
 export default function Payment() {
   const navigate = useNavigate();
-  const [method, setMethod] = useState("upi");
-  const [upiId, setUpiId] = useState("");
-  const [card, setCard] = useState({ number: "", name: "", expiry: "", cvv: "" });
-  const [bank, setBank] = useState("");
+  const [method, setMethod] = useState("online");
   const cartItems = JSON.parse(localStorage.getItem("cart")) || [];
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-  const handlePay = async () => {
-    const customer = JSON.parse(localStorage.getItem("customerDetails"));
+  const loadRazorpay = () => {
+    return new Promise((resolve) => {
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
 
-    if (
-      (method === "upi" && !upiId.trim()) ||
-      (method === "card" && (!card.number || !card.name || !card.expiry || !card.cvv)) ||
-      (method === "netbanking" && !bank.trim())
-    ) {
-      alert("Please fill all payment details.");
+  const handleRazorpay = async (orderData) => {
+    const res = await loadRazorpay();
+    if (!res) {
+      alert("Razorpay SDK failed to load.");
       return;
     }
 
+    const options = {
+      key: "rzp_test_1DP5mmOlF5G5ag",
+ // Replace with your actual Razorpay Key ID
+      amount: subtotal * 100, // amount in paise
+      currency: "INR",
+      name: "Your Company Name",
+      description: "Order Payment",
+      handler: async function (response) {
+        try {
+          await axios.post("http://localhost:8080/api/orders/submit", {
+            ...orderData,
+            razorpayPaymentId: response.razorpay_payment_id,
+          });
+          alert("Payment successful!");
+          navigate("/ordersuccess");
+        } catch (err) {
+          alert("Payment done but order failed to submit.");
+        }
+      },
+      prefill: {
+        name: orderData.name,
+        email: orderData.email,
+      },
+      theme: {
+        color: "#3399cc",
+      },
+    };
+
+    const rzp = new window.Razorpay(options);
+    rzp.open();
+  };
+
+  const handlePay = async () => {
+    const customer = JSON.parse(localStorage.getItem("customerDetails"));
     const orderData = {
       ...customer,
       paymentMethod: method,
       totalAmount: subtotal,
     };
 
-    try {
-      await axios.post("http://localhost:8080/api/orders/submit", orderData);
-      alert("Order placed successfully!");
-      navigate("/ordersuccess");
-    } catch (err) {
-      console.error("Order submission failed", err);
-      alert("Failed to place order.");
+    if (method === "online") {
+      handleRazorpay(orderData);
+    } else {
+      try {
+        await axios.post("http://localhost:8080/api/orders/submit", orderData);
+        alert("Order placed successfully!");
+        navigate("/ordersuccess");
+      } catch (err) {
+        alert("Failed to place order.");
+      }
     }
   };
 
   return (
     <div className="p-6 max-w-2xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">Payment</h1>
+      <h1 className="text-3xl font-bold mb-6">Select Payment Method</h1>
       <div className="flex gap-4 mb-6">
-        {["upi", "card", "netbanking", "cash on delivery"].map((m) => (
-          <button key={m} onClick={() => setMethod(m)} className={`px-4 py-2 rounded border ${method === m ? "bg-indigo-600 text-white" : ""}`}>
-            {m.toUpperCase()}
+        {["online", "cod"].map((m) => (
+          <button
+            key={m}
+            onClick={() => setMethod(m)}
+            className={`px-4 py-2 rounded border ${method === m ? "bg-indigo-600 text-white" : ""}`}
+          >
+            {m === "online" ? "Online Payment" : "Cash on Delivery"}
           </button>
         ))}
       </div>
-      {method === "upi" && <input type="text" placeholder="UPI ID" onChange={(e) => setUpiId(e.target.value)} className="w-full border p-3 rounded mb-4" />}
-      {method === "card" && (
-        <div className="space-y-2 mb-4">
-          <input placeholder="Card Number" onChange={(e) => setCard({ ...card, number: e.target.value })} className="w-full border p-3 rounded" />
-          <input placeholder="Name on Card" onChange={(e) => setCard({ ...card, name: e.target.value })} className="w-full border p-3 rounded" />
-          <input placeholder="MM/YY" onChange={(e) => setCard({ ...card, expiry: e.target.value })} className="w-full border p-3 rounded" />
-          <input placeholder="CVV" onChange={(e) => setCard({ ...card, cvv: e.target.value })} className="w-full border p-3 rounded" />
-        </div>
-      )}
-      {method === "netbanking" && (
-        <select onChange={(e) => setBank(e.target.value)} className="w-full border p-3 rounded mb-4">
-          <option value="">Select Bank</option>
-          <option value="sbi">SBI</option>
-          <option value="hdfc">HDFC</option>
-          <option value="icici">ICICI</option>
-          <option value="axis">Axis</option>
-        </select>
-      )}
+
       <div className="text-xl font-semibold mb-4">Total: ₹{subtotal}</div>
       <button onClick={handlePay} className="bg-green-600 text-white px-6 py-3 rounded hover:bg-green-500 transition">
         {method === "cod" ? "Place Order" : "Pay Now"}
